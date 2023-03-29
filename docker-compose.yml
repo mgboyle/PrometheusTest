@@ -34,6 +34,13 @@ services:
       - monitoring
     volumes:
       - ./alertmanager.yml:/etc/alertmanager/alertmanager.yml
+    environment:
+      - "SMTP_HOST=smtp.mailtrap.io"
+      - "SMTP_PORT=2525"
+      - "SMTP_USERNAME=YOUR_MAILTRAP_USERNAME"
+      - "SMTP_PASSWORD=YOUR_MAILTRAP_PASSWORD"
+      - "SMTP_FROM=alertmanager@example.com"
+      - "SMTP_TO=your-email@example.com"
 networks:
   monitoring:
     driver: bridge
