@@ -1,0 +1,11 @@
+groups:
+- name: BlackboxMonitor
+  rules:
+  - alert: BlackboxMetricsDown
+    expr: probe_success{job="blackbox"} == 0
+    for: 1m
+    labels:
+      severity: critical
+    annotations:
+      description: "Blackbox metrics endpoint {{ $labels.instance }} is down."
+      summary: "Blackbox metrics endpoint down"

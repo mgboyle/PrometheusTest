@@ -9,6 +9,7 @@ services:
       - monitoring
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./alert.rules.yml:/etc/prometheus/alert.rules.yml # Add this line
   grafana:
     image: grafana/grafana
     container_name: grafana
