@@ -2,8 +2,8 @@ groups:
 - name: BlackboxMonitor
   rules:
   - alert: BlackboxMetricsDown
-    expr: probe_success{job="blackbox"} == 0
-    for: 1m
+    expr: up{instance="host.docker.internal:1234", job="cpu_metrics"} == 0
+    for: 5s
     labels:
       severity: critical
     annotations:
