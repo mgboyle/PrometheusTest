@@ -1,7 +1,8 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Threading.Tasks;
 using Prometheus;
 
 namespace MyNamespace
@@ -57,8 +58,15 @@ namespace MyNamespace
                     // update the CPU usage gauge for each of the top 5 processes
                     foreach (var process in top5Processes)
                     {
-                        var cpuUsagePercentageTop5 = (float)(process.TotalProcessorTime.TotalMilliseconds / totalCpuTime);
-                        cpuUsageTop5.WithLabels(process.ProcessName).Set(cpuUsagePercentageTop5);
+                        try
+                        {
+                            var cpuUsagePercentageTop5 = (float)(process.TotalProcessorTime.TotalMilliseconds / totalCpuTime);
+                            cpuUsageTop5.WithLabels(process.ProcessName).Set(cpuUsagePercentageTop5);
+                        }
+                        catch
+                        {
+                            // ignore any exceptions and move on to the next process
+                        }
                     }
 
                     // wait for a few seconds before updating the metrics again
