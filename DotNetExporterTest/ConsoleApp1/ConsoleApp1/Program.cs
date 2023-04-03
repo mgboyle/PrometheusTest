@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -36,7 +36,37 @@ namespace MyNamespace
             {
                 while (true)
                 {
-                    // ... (existing code for CPU usage and disk space metrics)
+                    // get the total CPU time used by all processes on the system
+                    var cpuTime = new TimeSpan();
+                    var processes = new List<Process>();
+                    foreach (var process in Process.GetProcesses())
+                    {
+                        try
+                        {
+                            cpuTime += process.TotalProcessorTime;
+                            processes.Add(process);
+                        }
+                        catch
+                        {
+                            // ignore any exceptions and move on to the next process
+                        }
+                    }
+
+                    // calculate the CPU usage as a percentage of the total available CPU capacity on the system
+                    var totalCpuTime = Environment.TickCount * Environment.ProcessorCount;
+                    var cpuUsagePercentageTotal = (float)(cpuTime.TotalMilliseconds / totalCpuTime);
+
+                    // update the total CPU usage gauge
+                    cpuUsageTotal.Set(cpuUsagePercentageTotal);
+
+                    // update the available disk space gauge for each drive
+                    foreach (var drive in DriveInfo.GetDrives())
+                    {
+                        if (drive.IsReady)
+                        {
+                            diskSpaceAvailable.WithLabels(drive.Name).Set(drive.AvailableFreeSpace);
+                        }
+                    }
 
                     // update the I/O read time gauge for each process
                     foreach (var process in processes)

@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <PackageReference Include="prometheus-net" Version="8.0.0" />
+    <PackageReference Include="System.Diagnostics.PerformanceCounter" Version="7.0.0" />
   </ItemGroup>
 
 </Project>
