@@ -37,10 +37,10 @@ namespace MyNamespace
                     lastTotalTime = totalTime;
 
                     // Get the processes and their previous TotalProcessorTimes
-                    var processes = Process.GetProcesses().ToDictionary(p => p.Id, p => processTimes.GetValueOrDefault(p.Id, TimeSpan.Zero));
+                    var processes = Process.GetProcesses().ToDictionary(p => p.Id, p => p);
 
                     // Update the processTimes dictionary with the new TotalProcessorTimes
-                    processTimes = processes.ToDictionary(p => p.Key, p => p.Value);
+                    processTimes = processes.ToDictionary(p => p.Key, p => p.Value.TotalProcessorTime);
 
                     // Calculate the CPU usage for each process and the total CPU usage
                     float totalCpuUsage = 0;
