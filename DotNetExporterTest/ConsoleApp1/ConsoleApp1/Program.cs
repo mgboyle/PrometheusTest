@@ -37,10 +37,7 @@ namespace MyNamespace
                     lastTotalTime = totalTime;
 
                     // Get the processes and their previous TotalProcessorTimes
-                    var processes = Process.GetProcesses().ToDictionary(p => p.Id, p => p);
-
-                    // Update the processTimes dictionary with the new TotalProcessorTimes
-                    processTimes = processes.ToDictionary(p => p.Key, p => p.Value.TotalProcessorTime);
+                    var processes = Process.GetProcesses();
 
                     // Calculate the CPU usage for each process and the total CPU usage
                     float totalCpuUsage = 0;
@@ -48,16 +45,18 @@ namespace MyNamespace
                     {
                         try
                         {
-                            var currentProcessorTime = process.Value.TotalProcessorTime;
-                            var previousProcessorTime = processTimes[process.Key];
-                            var cpuUsage = (currentProcessorTime - previousProcessorTime).TotalMilliseconds / systemTimeDelta.TotalMilliseconds * 100;
-                            totalCpuUsage += (float)cpuUsage;
+                            var currentProcessorTime = process.TotalProcessorTime;
+                            if (processTimes.TryGetValue(process.Id, out var previousProcessorTime))
+                            {
+                                var cpuUsage = (currentProcessorTime - previousProcessorTime).TotalMilliseconds / systemTimeDelta.TotalMilliseconds * 100;
+                                totalCpuUsage += (float)cpuUsage;
+
+                                // Update the CPU usage gauge for the process
+                                cpuUsageTop5.WithLabels(process.ProcessName).Set(cpuUsage);
+                            }
 
                             // Update the processTimes dictionary with the new TotalProcessorTime
-                            processTimes[process.Key] = currentProcessorTime;
-
-                            // Update the CPU usage gauge for the process
-                            cpuUsageTop5.WithLabels(process.Value.ProcessName).Set(cpuUsage);
+                            processTimes[process.Id] = currentProcessorTime;
                         }
                         catch
                         {
