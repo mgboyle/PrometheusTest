@@ -53,7 +53,17 @@ namespace MyNamespace
                     cpuUsageTotal.Set(cpuUsagePercentageTotal);
 
                     // get the top 5 processes by CPU usage
-                    var top5Processes = processes.OrderByDescending(p => p.TotalProcessorTime).Take(5);
+                    var top5Processes = processes.OrderByDescending(p =>
+                    {
+                        try
+                        {
+                            return p.TotalProcessorTime;
+                        }
+                        catch
+                        {
+                            return TimeSpan.MinValue;
+                        }
+                    }).Take(5);
 
                     // update the CPU usage gauge for each of the top 5 processes
                     foreach (var process in top5Processes)
