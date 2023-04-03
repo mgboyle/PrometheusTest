@@ -73,4 +73,12 @@ namespace MyNamespace
                 }
             });
 
-            // wait for the user to
+            // wait for the user to press a key to exit the program
+            Console.WriteLine("Press any key to exit...");
+            Console.ReadKey();
+
+            // stop the HTTP server
+            server.Stop();
+        }
+    }
+}
