@@ -24,24 +24,40 @@ namespace MyNamespace
                 LabelNames = new[] { "process_name" }
             });
 
-            // create a PerformanceCounter to track the total CPU usage of the system
-            PerformanceCounter totalCpuCounter = new PerformanceCounter("Processor", "% Processor Time", "_Total");
-
             // start a background task to update the metrics
-            Task.Run(() =>
+            Task.Run(async () =>
             {
+                var processTimes = new Dictionary<int, TimeSpan>();
+                var lastTotalTime = TimeSpan.MinValue;
                 while (true)
                 {
-                    // update the total CPU usage gauge using the PerformanceCounter
-                    cpuUsageTotal.Set(totalCpuCounter.NextValue());
+                    // Get the total system time
+                    var totalTime = TimeSpan.FromMilliseconds(Environment.TickCount64);
+                    var systemTimeDelta = totalTime - lastTotalTime;
+                    lastTotalTime = totalTime;
 
-                    // get the top 5 processes by CPU usage
-                    var processes = new List<Process>();
-                    foreach (var process in Process.GetProcesses())
+                    // Get the processes and their previous TotalProcessorTimes
+                    var processes = Process.GetProcesses().ToDictionary(p => p.Id, p => processTimes.GetValueOrDefault(p.Id, TimeSpan.Zero));
+
+                    // Update the processTimes dictionary with the new TotalProcessorTimes
+                    processTimes = processes.ToDictionary(p => p.Key, p => p.Value);
+
+                    // Calculate the CPU usage for each process and the total CPU usage
+                    float totalCpuUsage = 0;
+                    foreach (var process in processes)
                     {
                         try
                         {
-                            processes.Add(process);
+                            var currentProcessorTime = process.Value.TotalProcessorTime;
+                            var previousProcessorTime = processTimes[process.Key];
+                            var cpuUsage = (currentProcessorTime - previousProcessorTime).TotalMilliseconds / systemTimeDelta.TotalMilliseconds * 100;
+                            totalCpuUsage += (float)cpuUsage;
+
+                            // Update the processTimes dictionary with the new TotalProcessorTime
+                            processTimes[process.Key] = currentProcessorTime;
+
+                            // Update the CPU usage gauge for the process
+                            cpuUsageTop5.WithLabels(process.Value.ProcessName).Set(cpuUsage);
                         }
                         catch
                         {
@@ -49,49 +65,12 @@ namespace MyNamespace
                         }
                     }
 
-                    var top5Processes = processes.OrderByDescending(p =>
-                    {
-                        try
-                        {
-                            using (PerformanceCounter processCpuCounter = new PerformanceCounter("Process", "% Processor Time", p.ProcessName))
-                            {
-                                return processCpuCounter.NextValue();
-                            }
-                        }
-                        catch
-                        {
-                            return 0.0f;
-                        }
-                    }).Take(5);
+                    // Update the total CPU usage gauge
+                    cpuUsageTotal.Set(totalCpuUsage);
 
-                    // update the CPU usage gauge for each of the top 5 processes
-                    foreach (var process in top5Processes)
-                    {
-                        try
-                        {
-                            using (PerformanceCounter processCpuCounter = new PerformanceCounter("Process", "% Processor Time", process.ProcessName))
-                            {
-                                var cpuUsagePercentageTop5 = processCpuCounter.NextValue();
-                                cpuUsageTop5.WithLabels(process.ProcessName).Set(cpuUsagePercentageTop5);
-                            }
-                        }
-                        catch
-                        {
-                            // ignore any exceptions and move on to the next process
-                        }
-                    }
-
-                    // wait for a few seconds before updating the metrics again
-                    Task.Delay(TimeSpan.FromSeconds(5)).Wait();
+                    // Wait for a few seconds before updating the metrics again
+                    await Task.Delay(TimeSpan.FromSeconds(5));
                 }
             });
 
-            // wait for the user to press a key to exit the program
-            Console.WriteLine("Press any key to exit...");
-            Console.ReadKey();
-
-            // stop the HTTP server
-            server.Stop();
-        }
-    }
-}
+            // wait for the user to
